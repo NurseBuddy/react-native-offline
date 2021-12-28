@@ -108,13 +108,12 @@ export const createReleaseQueue = (
   getState: GetState,
   next: StoreDispatch,
   delay: number,
-  shouldDequeueSelector: Arguments['shouldDequeueSelector'],
 ) => async (queue: EnqueuedAction[]) => {
   // eslint-disable-next-line
   for (const action of queue) {
     const state = getState();
     const { isConnected, isQueuePaused } = state.network;
-    if (isConnected && !isQueuePaused && shouldDequeueSelector(state)) {
+    if (isConnected && !isQueuePaused) {
       next(removeActionFromQueue(action));
       next(action);
       // eslint-disable-next-line
@@ -139,7 +138,6 @@ function createNetworkMiddleware({
       getState,
       next,
       queueReleaseThrottle,
-      shouldDequeueSelector,
     );
     validateParams(regexActionType, actionTypes);
 
