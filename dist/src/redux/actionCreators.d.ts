@@ -28,6 +28,10 @@ export declare const removeActionFromQueue: (action: EnqueuedAction) => {
     type: "@@network-connectivity/REMOVE_FROM_ACTION_QUEUE";
     payload: EnqueuedAction;
 };
+export declare const updateQueueTimestamp: (timestamp: number) => {
+    type: "@@network-connectivity/SET_QUEUE_TIMESTAMP";
+    payload: number;
+};
 export declare const dismissActionsFromQueue: (actionTrigger: string) => {
     type: "@@network-connectivity/DISMISS_ACTIONS_FROM_QUEUE";
     payload: string;

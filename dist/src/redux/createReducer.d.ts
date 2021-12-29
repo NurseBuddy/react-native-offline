@@ -5,6 +5,7 @@ export declare const initialState: {
     isConnected: boolean;
     actionQueue: EnqueuedAction[];
     isQueuePaused: boolean;
+    runningActionQueueTs: null;
 };
 declare const _default: (comparisonFn?: ComparisonFn) => (state: NetworkState | undefined, action: AnyAction | {
     type: "@@network-connectivity/FETCH_OFFLINE_MODE";

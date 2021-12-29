@@ -16,6 +16,7 @@ var FETCH_OFFLINE_MODE = '@@network-connectivity/FETCH_OFFLINE_MODE';
 var REMOVE_FROM_ACTION_QUEUE = '@@network-connectivity/REMOVE_FROM_ACTION_QUEUE';
 var DISMISS_ACTIONS_FROM_QUEUE = '@@network-connectivity/DISMISS_ACTIONS_FROM_QUEUE';
 var CHANGE_QUEUE_SEMAPHORE = '@@network-connectivity/CHANGE_QUEUE_SEMAPHORE';
+var SET_QUEUE_TIMESTAMP = '@@network-connectivity/SET_QUEUE_TIMESTAMP';
 
 var actionTypes = /*#__PURE__*/Object.freeze({
   __proto__: null,
@@ -23,7 +24,8 @@ var actionTypes = /*#__PURE__*/Object.freeze({
   FETCH_OFFLINE_MODE: FETCH_OFFLINE_MODE,
   REMOVE_FROM_ACTION_QUEUE: REMOVE_FROM_ACTION_QUEUE,
   DISMISS_ACTIONS_FROM_QUEUE: DISMISS_ACTIONS_FROM_QUEUE,
-  CHANGE_QUEUE_SEMAPHORE: CHANGE_QUEUE_SEMAPHORE
+  CHANGE_QUEUE_SEMAPHORE: CHANGE_QUEUE_SEMAPHORE,
+  SET_QUEUE_TIMESTAMP: SET_QUEUE_TIMESTAMP
 });
 
 /*! *****************************************************************************
@@ -152,6 +154,10 @@ var removeActionFromQueue = function (action) { return ({
     type: REMOVE_FROM_ACTION_QUEUE,
     payload: action,
 }); };
+var updateQueueTimestamp = function (timestamp) { return ({
+    type: SET_QUEUE_TIMESTAMP,
+    payload: timestamp,
+}); };
 var dismissActionsFromQueue = function (actionTrigger) { return ({
     type: DISMISS_ACTIONS_FROM_QUEUE,
     payload: actionTrigger,
@@ -166,6 +172,7 @@ var actionCreators = /*#__PURE__*/Object.freeze({
   connectionChange: connectionChange,
   fetchOfflineMode: fetchOfflineMode,
   removeActionFromQueue: removeActionFromQueue,
+  updateQueueTimestamp: updateQueueTimestamp,
   dismissActionsFromQueue: dismissActionsFromQueue,
   changeQueueSemaphore: changeQueueSemaphore
 });
@@ -3200,10 +3207,12 @@ function nonNullable(value) {
 }
 
 var actionQueue = [];
+var runningActionQueueTs = null;
 var initialState = {
     isConnected: true,
     actionQueue: actionQueue,
     isQueuePaused: false,
+    runningActionQueueTs: runningActionQueueTs,
 };
 function handleOfflineAction(state, _a, comparisonFn) {
     var _b = _a.payload, prevAction = _b.prevAction, prevThunk = _b.prevThunk, meta = _a.meta;
@@ -3251,6 +3260,8 @@ var _reducer = (function (comparisonFn) {
                 return handleDismissActionsFromQueue(state, action.payload);
             case CHANGE_QUEUE_SEMAPHORE:
                 return handleChangeQueueSemaphore(state, action.payload);
+            case SET_QUEUE_TIMESTAMP:
+                return __assign(__assign({}, state), { runningActionQueueTs: action.payload });
             default:
                 return state;
         }
@@ -4181,19 +4192,25 @@ function didQueueResume(action, isQueuePaused) {
     }
     return false;
 }
-var createReleaseQueue = function (getState, next, delay) { return function (queue) { return __awaiter(void 0, void 0, void 0, function () {
-    var _i, queue_1, action, state, _a, isConnected, isQueuePaused;
+var createReleaseQueue = function (getState, next, delay) { return function () { return __awaiter(void 0, void 0, void 0, function () {
+    var queueTimestamp, state, _a, isConnected, isQueuePaused, runningActionQueueTs, actionQueue, action;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
-                _i = 0, queue_1 = queue;
+                queueTimestamp = new Date().getDate();
+                next(updateQueueTimestamp(queueTimestamp));
                 _b.label = 1;
             case 1:
-                if (!(_i < queue_1.length)) return [3 /*break*/, 5];
-                action = queue_1[_i];
                 state = getState();
-                _a = state.network, isConnected = _a.isConnected, isQueuePaused = _a.isQueuePaused;
-                if (!(isConnected && !isQueuePaused)) return [3 /*break*/, 3];
+                _a = state.network, isConnected = _a.isConnected, isQueuePaused = _a.isQueuePaused, runningActionQueueTs = _a.runningActionQueueTs, actionQueue = _a.actionQueue;
+                if (runningActionQueueTs && runningActionQueueTs > queueTimestamp) {
+                    return [3 /*break*/, 5];
+                }
+                if (!(actionQueue &&
+                    actionQueue.length > 0 &&
+                    isConnected &&
+                    !isQueuePaused)) return [3 /*break*/, 3];
+                action = actionQueue[0];
                 next(removeActionFromQueue(action));
                 next(action);
                 // eslint-disable-next-line
@@ -4203,9 +4220,7 @@ var createReleaseQueue = function (getState, next, delay) { return function (que
                 _b.sent();
                 return [3 /*break*/, 4];
             case 3: return [3 /*break*/, 5];
-            case 4:
-                _i++;
-                return [3 /*break*/, 1];
+            case 4: return [3 /*break*/, 1];
             case 5: return [2 /*return*/];
         }
     });
@@ -4231,7 +4246,7 @@ function createNetworkMiddleware(_a) {
             if (shouldDequeue) {
                 // Dispatching queued actions in order of arrival (if we have any)
                 next(action);
-                return releaseQueue(actionQueue);
+                return releaseQueue();
             }
             // Checking if we have a dismissal case
             // narrow down type from thunk to only pass in actions with type -> AnyAction
