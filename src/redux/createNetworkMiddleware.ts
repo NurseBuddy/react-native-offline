@@ -5,6 +5,7 @@ import {
   fetchOfflineMode,
   removeActionFromQueue,
   dismissActionsFromQueue,
+  updateQueueTimestamp,
 } from './actionCreators';
 import * as networkActionTypes from './actionTypes';
 import wait from '../utils/wait';
@@ -109,12 +110,32 @@ export const createReleaseQueue = (
   next: StoreDispatch,
   delay: number,
   shouldDequeueSelector: Arguments['shouldDequeueSelector'],
-) => async (queue: EnqueuedAction[]) => {
+) => async () => {
+  const queueTimestamp = new Date().getDate();
+  next(updateQueueTimestamp(queueTimestamp));
   // eslint-disable-next-line
-  for (const action of queue) {
+  while (true) {
     const state = getState();
-    const { isConnected, isQueuePaused } = state.network;
-    if (isConnected && !isQueuePaused && shouldDequeueSelector(state)) {
+
+    const {
+      isConnected,
+      isQueuePaused,
+      runningActionQueueTs,
+      actionQueue,
+    } = state.network;
+
+    if (runningActionQueueTs && runningActionQueueTs > queueTimestamp) {
+      break;
+    }
+
+    if (
+      actionQueue &&
+      actionQueue.length > 0 &&
+      isConnected &&
+      !isQueuePaused &&
+      shouldDequeueSelector(state)
+    ) {
+      const action = actionQueue[0];
       next(removeActionFromQueue(action));
       next(action);
       // eslint-disable-next-line
@@ -165,7 +186,7 @@ function createNetworkMiddleware({
     if (shouldDequeue) {
       // Dispatching queued actions in order of arrival (if we have any)
       next(action);
-      return releaseQueue(actionQueue);
+      return releaseQueue();
     }
 
     // Checking if we have a dismissal case

@@ -6,3 +6,4 @@ export const DISMISS_ACTIONS_FROM_QUEUE =
   '@@network-connectivity/DISMISS_ACTIONS_FROM_QUEUE';
 export const CHANGE_QUEUE_SEMAPHORE =
   '@@network-connectivity/CHANGE_QUEUE_SEMAPHORE';
+export const SET_QUEUE_TIMESTAMP = '@@network-connectivity/SET_QUEUE_TIMESTAMP';

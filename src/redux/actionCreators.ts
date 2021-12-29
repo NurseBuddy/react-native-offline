@@ -34,6 +34,11 @@ export const removeActionFromQueue = (action: EnqueuedAction) => ({
   payload: action,
 });
 
+export const updateQueueTimestamp = (timestamp: number) => ({
+  type: actionTypes.SET_QUEUE_TIMESTAMP as typeof actionTypes.SET_QUEUE_TIMESTAMP,
+  payload: timestamp,
+});
+
 export const dismissActionsFromQueue = (actionTrigger: string) => ({
   type: actionTypes.DISMISS_ACTIONS_FROM_QUEUE as typeof actionTypes.DISMISS_ACTIONS_FROM_QUEUE,
   payload: actionTrigger,
