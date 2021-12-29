@@ -7,11 +7,9 @@ import {
   dismissActionsFromQueue,
 } from './actionCreators';
 import * as networkActionTypes from './actionTypes';
-import wait from '../utils/wait';
 import { NetworkState, EnqueuedAction } from '../types';
 import { SEMAPHORE_COLOR } from '../utils/constants';
 
-type GetState = MiddlewareAPI<Dispatch, State>['getState'];
 type State = {
   network: NetworkState;
 };
@@ -104,41 +102,26 @@ function didQueueResume(action: EnqueuedAction, isQueuePaused: boolean) {
   return false;
 }
 
-export const createReleaseQueue = (
-  getState: GetState,
-  next: StoreDispatch,
-  delay: number,
-) => async (queue: EnqueuedAction[]) => {
+export const createReleaseNextAction = (dispatch: StoreDispatch) => async (
+  queue: EnqueuedAction[],
+) => {
   // eslint-disable-next-line
-  for (const action of queue) {
-    const state = getState();
-    const { isConnected, isQueuePaused } = state.network;
-    if (isConnected && !isQueuePaused) {
-      next(removeActionFromQueue(action));
-      next(action);
-      // eslint-disable-next-line
-      await wait(delay);
-    } else {
-      break;
-    }
-  }
+  if (!queue.length) return;
+  const action = queue[0];
+  dispatch(removeActionFromQueue(action));
+  dispatch(action);
+  // eslint-disable-next-line
 };
 
 function createNetworkMiddleware({
   regexActionType = DEFAULT_ARGUMENTS.regexActionType,
   actionTypes = DEFAULT_ARGUMENTS.actionTypes,
-  queueReleaseThrottle = DEFAULT_ARGUMENTS.queueReleaseThrottle,
-  shouldDequeueSelector = DEFAULT_ARGUMENTS.shouldDequeueSelector,
 }: Partial<Arguments> = {}): Middleware<{}, State, Dispatch> {
   return ({ getState }: MiddlewareAPI<Dispatch, State>) => (
     next: StoreDispatch,
   ) => (action: EnqueuedAction) => {
     const { isConnected, actionQueue, isQueuePaused } = getState().network;
-    const releaseQueue = createReleaseQueue(
-      getState,
-      next,
-      queueReleaseThrottle,
-    );
+    const releaseNextAction = createReleaseNextAction(next);
     validateParams(regexActionType, actionTypes);
 
     const shouldInterceptAction = checkIfActionShouldBeIntercepted(
@@ -156,14 +139,12 @@ function createNetworkMiddleware({
     const isBackOnline = didComeBackOnline(action, isConnected);
     const hasQueueBeenResumed = didQueueResume(action, isQueuePaused);
 
-    const shouldDequeue =
-      (isBackOnline || (isConnected && hasQueueBeenResumed)) &&
-      shouldDequeueSelector(getState());
+    const shouldDequeue = isBackOnline || (isConnected && hasQueueBeenResumed);
 
     if (shouldDequeue) {
-      // Dispatching queued actions in order of arrival (if we have any)
+      // Dispatch next action from queue
       next(action);
-      return releaseQueue(actionQueue);
+      return releaseNextAction(actionQueue);
     }
 
     // Checking if we have a dismissal case

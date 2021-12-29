@@ -11,6 +11,6 @@ declare type Arguments = {
     shouldDequeueSelector: (state: State) => boolean;
 };
 declare type StoreDispatch = (...args: any[]) => any;
-export declare const createReleaseQueue: (getState: () => State, next: StoreDispatch, delay: number) => (queue: EnqueuedAction[]) => Promise<void>;
-declare function createNetworkMiddleware({ regexActionType, actionTypes, queueReleaseThrottle, shouldDequeueSelector, }?: Partial<Arguments>): Middleware<{}, State, Dispatch>;
+export declare const createReleaseNextAction: (dispatch: StoreDispatch) => (queue: EnqueuedAction[]) => Promise<void>;
+declare function createNetworkMiddleware({ regexActionType, actionTypes, }?: Partial<Arguments>): Middleware<{}, State, Dispatch>;
 export default createNetworkMiddleware;

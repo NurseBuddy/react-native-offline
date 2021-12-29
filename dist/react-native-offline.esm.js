@@ -4125,8 +4125,6 @@ var find = _createFind(findIndex_1);
 
 var find_1 = find;
 
-var wait = function (t) { return new Promise(function (resolve) { return setTimeout(resolve, t); }); };
-
 var DEFAULT_ARGUMENTS$1 = {
     actionTypes: [],
     regexActionType: /FETCH.*REQUEST/,
@@ -4174,42 +4172,25 @@ function didQueueResume(action, isQueuePaused) {
     }
     return false;
 }
-var createReleaseQueue = function (getState, next, delay) { return function (queue) { return __awaiter(void 0, void 0, void 0, function () {
-    var _i, queue_1, action, state, _a, isConnected, isQueuePaused;
-    return __generator(this, function (_b) {
-        switch (_b.label) {
-            case 0:
-                _i = 0, queue_1 = queue;
-                _b.label = 1;
-            case 1:
-                if (!(_i < queue_1.length)) return [3 /*break*/, 5];
-                action = queue_1[_i];
-                state = getState();
-                _a = state.network, isConnected = _a.isConnected, isQueuePaused = _a.isQueuePaused;
-                if (!(isConnected && !isQueuePaused)) return [3 /*break*/, 3];
-                next(removeActionFromQueue(action));
-                next(action);
-                // eslint-disable-next-line
-                return [4 /*yield*/, wait(delay)];
-            case 2:
-                // eslint-disable-next-line
-                _b.sent();
-                return [3 /*break*/, 4];
-            case 3: return [3 /*break*/, 5];
-            case 4:
-                _i++;
-                return [3 /*break*/, 1];
-            case 5: return [2 /*return*/];
-        }
+var createReleaseNextAction = function (dispatch) { return function (queue) { return __awaiter(void 0, void 0, void 0, function () {
+    var action;
+    return __generator(this, function (_a) {
+        // eslint-disable-next-line
+        if (!queue.length)
+            return [2 /*return*/];
+        action = queue[0];
+        dispatch(removeActionFromQueue(action));
+        dispatch(action);
+        return [2 /*return*/];
     });
 }); }; };
 function createNetworkMiddleware(_a) {
-    var _b = _a === void 0 ? {} : _a, _c = _b.regexActionType, regexActionType = _c === void 0 ? DEFAULT_ARGUMENTS$1.regexActionType : _c, _d = _b.actionTypes, actionTypes = _d === void 0 ? DEFAULT_ARGUMENTS$1.actionTypes : _d, _e = _b.queueReleaseThrottle, queueReleaseThrottle = _e === void 0 ? DEFAULT_ARGUMENTS$1.queueReleaseThrottle : _e, _f = _b.shouldDequeueSelector, shouldDequeueSelector = _f === void 0 ? DEFAULT_ARGUMENTS$1.shouldDequeueSelector : _f;
+    var _b = _a === void 0 ? {} : _a, _c = _b.regexActionType, regexActionType = _c === void 0 ? DEFAULT_ARGUMENTS$1.regexActionType : _c, _d = _b.actionTypes, actionTypes = _d === void 0 ? DEFAULT_ARGUMENTS$1.actionTypes : _d;
     return function (_a) {
         var getState = _a.getState;
         return function (next) { return function (action) {
             var _a = getState().network, isConnected = _a.isConnected, actionQueue = _a.actionQueue, isQueuePaused = _a.isQueuePaused;
-            var releaseQueue = createReleaseQueue(getState, next, queueReleaseThrottle);
+            var releaseNextAction = createReleaseNextAction(next);
             validateParams(regexActionType, actionTypes);
             var shouldInterceptAction = checkIfActionShouldBeIntercepted(action, regexActionType, actionTypes);
             if (shouldInterceptAction && isConnected !== true) {
@@ -4219,12 +4200,11 @@ function createNetworkMiddleware(_a) {
             }
             var isBackOnline = didComeBackOnline(action, isConnected);
             var hasQueueBeenResumed = didQueueResume(action, isQueuePaused);
-            var shouldDequeue = (isBackOnline || (isConnected && hasQueueBeenResumed)) &&
-                shouldDequeueSelector(getState());
+            var shouldDequeue = (isBackOnline || (isConnected && hasQueueBeenResumed));
             if (shouldDequeue) {
                 // Dispatching queued actions in order of arrival (if we have any)
                 next(action);
-                return releaseQueue(actionQueue);
+                return releaseNextAction(actionQueue);
             }
             // Checking if we have a dismissal case
             // narrow down type from thunk to only pass in actions with type -> AnyAction
