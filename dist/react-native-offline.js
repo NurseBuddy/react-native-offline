@@ -4197,7 +4197,7 @@ var createReleaseQueue = function (getState, next, delay) { return function () {
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
-                queueTimestamp = new Date().getDate();
+                queueTimestamp = new Date().getTime();
                 next(updateQueueTimestamp(queueTimestamp));
                 _b.label = 1;
             case 1:

@@ -110,7 +110,7 @@ export const createReleaseQueue = (
   next: StoreDispatch,
   delay: number,
 ) => async () => {
-  const queueTimestamp = new Date().getDate();
+  const queueTimestamp = new Date().getTime();
   next(updateQueueTimestamp(queueTimestamp));
   // eslint-disable-next-line
   while (true) {
