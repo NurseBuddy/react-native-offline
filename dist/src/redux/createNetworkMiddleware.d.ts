@@ -1,5 +1,5 @@
 import { Middleware, Dispatch } from 'redux';
-import { NetworkState, EnqueuedAction } from '../types';
+import { NetworkState } from '../types';
 declare type State = {
     network: NetworkState;
 };
@@ -11,6 +11,6 @@ declare type Arguments = {
     shouldDequeueSelector: (state: State) => boolean;
 };
 declare type StoreDispatch = (...args: any[]) => any;
-export declare const createReleaseQueue: (getState: () => State, next: StoreDispatch, delay: number) => (queue: EnqueuedAction[]) => Promise<void>;
+export declare const createReleaseQueue: (getState: () => State, next: StoreDispatch, delay: number) => () => Promise<void>;
 declare function createNetworkMiddleware({ regexActionType, actionTypes, queueReleaseThrottle, shouldDequeueSelector, }?: Partial<Arguments>): Middleware<{}, State, Dispatch>;
 export default createNetworkMiddleware;

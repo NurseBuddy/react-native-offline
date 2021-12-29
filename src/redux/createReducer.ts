@@ -20,10 +20,12 @@ type ComparisonFn = (
 ) => FluxAction<any> | Thunk | undefined;
 
 const actionQueue: EnqueuedAction[] = [];
+const runningActionQueueTs: number | null = null;
 export const initialState = {
   isConnected: true,
   actionQueue,
   isQueuePaused: false,
+  runningActionQueueTs,
 };
 
 function handleOfflineAction(
@@ -124,6 +126,11 @@ export default (comparisonFn: ComparisonFn = getSimilarActionInQueue) => (
       return handleDismissActionsFromQueue(state, action.payload);
     case actionTypes.CHANGE_QUEUE_SEMAPHORE:
       return handleChangeQueueSemaphore(state, action.payload);
+    case actionTypes.SET_QUEUE_TIMESTAMP:
+      return {
+        ...state,
+        runningActionQueueTs: action.payload,
+      };
     default:
       return state;
   }

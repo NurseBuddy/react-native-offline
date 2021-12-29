@@ -3,3 +3,4 @@ export declare const FETCH_OFFLINE_MODE = "@@network-connectivity/FETCH_OFFLINE_
 export declare const REMOVE_FROM_ACTION_QUEUE = "@@network-connectivity/REMOVE_FROM_ACTION_QUEUE";
 export declare const DISMISS_ACTIONS_FROM_QUEUE = "@@network-connectivity/DISMISS_ACTIONS_FROM_QUEUE";
 export declare const CHANGE_QUEUE_SEMAPHORE = "@@network-connectivity/CHANGE_QUEUE_SEMAPHORE";
+export declare const SET_QUEUE_TIMESTAMP = "@@network-connectivity/SET_QUEUE_TIMESTAMP";

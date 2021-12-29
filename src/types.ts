@@ -6,6 +6,7 @@ export interface Thunk {
   interceptInOffline?: boolean;
 }
 export type EnqueuedAction = FluxAction | Thunk;
+export type QueueuTimestamp = number | null;
 
 export interface MetaProps {
   retry?: boolean;
@@ -22,6 +23,7 @@ export interface FluxAction<T = any> extends AnyAction {
 export interface NetworkState extends ConnectivityState {
   isQueuePaused: boolean;
   actionQueue: EnqueuedAction[];
+  runningActionQueueTs: QueueuTimestamp;
 }
 
 export type ConnectivityState = {
