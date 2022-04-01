@@ -134,8 +134,12 @@ export const createReleaseQueue = (
       !isQueuePaused
     ) {
       const action = actionQueue[0];
+      console.log('Starting dispatch from offline queue');
+      console.time('offlineActionDispatch');
       next(removeActionFromQueue(action));
-      next(action);
+      // eslint-disable-next-line no-await-in-loop
+      await next(action);
+      console.timeEnd('offlineActionDispatch');
       // eslint-disable-next-line
       await wait(delay);
     } else {
