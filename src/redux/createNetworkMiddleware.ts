@@ -5,7 +5,6 @@ import {
   fetchOfflineMode,
   removeActionFromQueue,
   dismissActionsFromQueue,
-  updateQueueTimestamp,
 } from './actionCreators';
 import * as networkActionTypes from './actionTypes';
 import wait from '../utils/wait';
@@ -105,27 +104,18 @@ function didQueueResume(action: EnqueuedAction, isQueuePaused: boolean) {
   return false;
 }
 
+let isQueueInProgress = false;
+
 export const createReleaseQueue = (
   getState: GetState,
   next: StoreDispatch,
   delay: number,
 ) => async () => {
-  const queueTimestamp = new Date().getTime();
-  next(updateQueueTimestamp(queueTimestamp));
   // eslint-disable-next-line
   while (true) {
     const state = getState();
 
-    const {
-      isConnected,
-      isQueuePaused,
-      runningActionQueueTs,
-      actionQueue,
-    } = state.network;
-
-    if (runningActionQueueTs && runningActionQueueTs > queueTimestamp) {
-      break;
-    }
+    const { isConnected, isQueuePaused, actionQueue } = state.network;
 
     if (
       actionQueue &&
@@ -139,6 +129,7 @@ export const createReleaseQueue = (
       // eslint-disable-next-line
       await wait(delay);
     } else {
+      isQueueInProgress = false;
       break;
     }
   }
@@ -180,9 +171,10 @@ function createNetworkMiddleware({
       (isBackOnline || (isConnected && hasQueueBeenResumed)) &&
       shouldDequeueSelector(getState());
 
-    if (shouldDequeue) {
+    if (shouldDequeue && !isQueueInProgress) {
       // Dispatching queued actions in order of arrival (if we have any)
       next(action);
+      isQueueInProgress = true;
       return releaseQueue();
     }
 

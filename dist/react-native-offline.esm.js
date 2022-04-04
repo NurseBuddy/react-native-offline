@@ -147,10 +147,6 @@ var removeActionFromQueue = function (action) { return ({
     type: REMOVE_FROM_ACTION_QUEUE,
     payload: action,
 }); };
-var updateQueueTimestamp = function (timestamp) { return ({
-    type: SET_QUEUE_TIMESTAMP,
-    payload: timestamp,
-}); };
 var dismissActionsFromQueue = function (actionTrigger) { return ({
     type: DISMISS_ACTIONS_FROM_QUEUE,
     payload: actionTrigger,
@@ -165,7 +161,6 @@ var actionCreators = /*#__PURE__*/Object.freeze({
   connectionChange: connectionChange,
   fetchOfflineMode: fetchOfflineMode,
   removeActionFromQueue: removeActionFromQueue,
-  updateQueueTimestamp: updateQueueTimestamp,
   dismissActionsFromQueue: dismissActionsFromQueue,
   changeQueueSemaphore: changeQueueSemaphore
 });
@@ -3253,8 +3248,6 @@ var _reducer = (function (comparisonFn) {
                 return handleDismissActionsFromQueue(state, action.payload);
             case CHANGE_QUEUE_SEMAPHORE:
                 return handleChangeQueueSemaphore(state, action.payload);
-            case SET_QUEUE_TIMESTAMP:
-                return __assign(__assign({}, state), { runningActionQueueTs: action.payload });
             default:
                 return state;
         }
@@ -4185,36 +4178,32 @@ function didQueueResume(action, isQueuePaused) {
     }
     return false;
 }
+var isQueueInProgress = false;
 var createReleaseQueue = function (getState, next, delay) { return function () { return __awaiter(void 0, void 0, void 0, function () {
-    var queueTimestamp, state, _a, isConnected, isQueuePaused, runningActionQueueTs, actionQueue, action;
+    var state, _a, isConnected, isQueuePaused, actionQueue, action;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
-                queueTimestamp = new Date().getTime();
-                next(updateQueueTimestamp(queueTimestamp));
-                _b.label = 1;
-            case 1:
                 state = getState();
-                _a = state.network, isConnected = _a.isConnected, isQueuePaused = _a.isQueuePaused, runningActionQueueTs = _a.runningActionQueueTs, actionQueue = _a.actionQueue;
-                if (runningActionQueueTs && runningActionQueueTs > queueTimestamp) {
-                    return [3 /*break*/, 5];
-                }
+                _a = state.network, isConnected = _a.isConnected, isQueuePaused = _a.isQueuePaused, actionQueue = _a.actionQueue;
                 if (!(actionQueue &&
                     actionQueue.length > 0 &&
                     isConnected &&
-                    !isQueuePaused)) return [3 /*break*/, 3];
+                    !isQueuePaused)) return [3 /*break*/, 2];
                 action = actionQueue[0];
                 next(removeActionFromQueue(action));
                 next(action);
                 // eslint-disable-next-line
                 return [4 /*yield*/, wait(delay)];
-            case 2:
+            case 1:
                 // eslint-disable-next-line
                 _b.sent();
+                return [3 /*break*/, 3];
+            case 2:
+                isQueueInProgress = false;
                 return [3 /*break*/, 4];
-            case 3: return [3 /*break*/, 5];
-            case 4: return [3 /*break*/, 1];
-            case 5: return [2 /*return*/];
+            case 3: return [3 /*break*/, 0];
+            case 4: return [2 /*return*/];
         }
     });
 }); }; };
@@ -4236,9 +4225,10 @@ function createNetworkMiddleware(_a) {
             var hasQueueBeenResumed = didQueueResume(action, isQueuePaused);
             var shouldDequeue = (isBackOnline || (isConnected && hasQueueBeenResumed)) &&
                 shouldDequeueSelector(getState());
-            if (shouldDequeue) {
+            if (shouldDequeue && !isQueueInProgress) {
                 // Dispatching queued actions in order of arrival (if we have any)
                 next(action);
+                isQueueInProgress = true;
                 return releaseQueue();
             }
             // Checking if we have a dismissal case

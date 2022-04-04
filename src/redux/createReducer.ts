@@ -126,11 +126,6 @@ export default (comparisonFn: ComparisonFn = getSimilarActionInQueue) => (
       return handleDismissActionsFromQueue(state, action.payload);
     case actionTypes.CHANGE_QUEUE_SEMAPHORE:
       return handleChangeQueueSemaphore(state, action.payload);
-    case actionTypes.SET_QUEUE_TIMESTAMP:
-      return {
-        ...state,
-        runningActionQueueTs: action.payload,
-      };
     default:
       return state;
   }
