@@ -4197,31 +4197,27 @@ var createReleaseQueue = function (getState, next, delay) { return function () {
                 state = getState();
                 _a = state.network, isConnected = _a.isConnected, isQueuePaused = _a.isQueuePaused, runningActionQueueTs = _a.runningActionQueueTs, actionQueue = _a.actionQueue;
                 if (runningActionQueueTs && runningActionQueueTs > queueTimestamp) {
-                    return [3 /*break*/, 6];
+                    return [3 /*break*/, 5];
                 }
                 if (!(actionQueue &&
                     actionQueue.length > 0 &&
                     isConnected &&
-                    !isQueuePaused)) return [3 /*break*/, 4];
+                    !isQueuePaused)) return [3 /*break*/, 3];
                 action = actionQueue[0];
                 console.log('Starting dispatch from offline queue');
                 console.time('offlineActionDispatch');
                 next(removeActionFromQueue(action));
-                // eslint-disable-next-line no-await-in-loop
-                return [4 /*yield*/, next(action)];
-            case 2:
-                // eslint-disable-next-line no-await-in-loop
-                _b.sent();
+                next(action);
                 console.timeEnd('offlineActionDispatch');
                 // eslint-disable-next-line
                 return [4 /*yield*/, wait(delay)];
-            case 3:
+            case 2:
                 // eslint-disable-next-line
                 _b.sent();
-                return [3 /*break*/, 5];
-            case 4: return [3 /*break*/, 6];
-            case 5: return [3 /*break*/, 1];
-            case 6: return [2 /*return*/];
+                return [3 /*break*/, 4];
+            case 3: return [3 /*break*/, 5];
+            case 4: return [3 /*break*/, 1];
+            case 5: return [2 /*return*/];
         }
     });
 }); }; };
@@ -4246,6 +4242,9 @@ function createNetworkMiddleware(_a) {
             if (shouldDequeue) {
                 // Dispatching queued actions in order of arrival (if we have any)
                 next(action);
+                releaseQueue();
+                releaseQueue();
+                releaseQueue();
                 return releaseQueue();
             }
             // Checking if we have a dismissal case

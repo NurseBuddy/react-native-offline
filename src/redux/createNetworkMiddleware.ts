@@ -137,7 +137,6 @@ export const createReleaseQueue = (
       console.log('Starting dispatch from offline queue');
       console.time('offlineActionDispatch');
       next(removeActionFromQueue(action));
-      // eslint-disable-next-line no-await-in-loop
       next(action);
       console.timeEnd('offlineActionDispatch');
       // eslint-disable-next-line
@@ -187,6 +186,7 @@ function createNetworkMiddleware({
     if (shouldDequeue) {
       // Dispatching queued actions in order of arrival (if we have any)
       next(action);
+      releaseQueue();
       releaseQueue();
       releaseQueue();
       return releaseQueue();
