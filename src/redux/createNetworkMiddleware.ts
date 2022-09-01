@@ -125,6 +125,9 @@ export const createReleaseQueue = (
     ) {
       const action = actionQueue[0];
       next(removeActionFromQueue(action));
+      if (action?.meta) {
+        action.meta.isFromQueue = true;
+      }
       next(action);
       // eslint-disable-next-line
       await wait(delay);
