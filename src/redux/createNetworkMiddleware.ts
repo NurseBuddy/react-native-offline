@@ -120,8 +120,8 @@ export const createReleaseQueue = (
       !isQueuePaused
     ) {
       const action = actionQueue[0];
-      //TODO: add flag to meta details for thunks which should be automatically/manually removed from queue
-      //TODO: add action dismissing to required thunk success/error handlers
+      // TODO: add flag to meta details for thunks which should be automatically/manually removed from queue
+      // TODO: add action dismissing to required thunk success/error handlers
       next(removeActionFromQueue(action));
       next(action);
       // eslint-disable-next-line
@@ -161,7 +161,7 @@ function createNetworkMiddleware({
       return next(fetchOfflineMode(action));
     }
 
-    const isOnline = didComeBackOnline(action, isConnected);
+    const isOnline = didComeBackOnline(action);
     const hasQueueBeenResumed = didQueueResume(action, isQueuePaused);
 
     const shouldDequeue =

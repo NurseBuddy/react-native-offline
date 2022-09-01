@@ -4162,10 +4162,9 @@ function checkIfActionShouldBeIntercepted(action, regexActionType, actionTypes) 
     return (isObjectAndShouldBeIntercepted(action, regexActionType, actionTypes) ||
         isThunkAndShouldBeIntercepted(action));
 }
-function didComeBackOnline(action, wasConnected) {
+function didComeBackOnline(action) {
     if ('type' in action && 'payload' in action) {
         return (action.type === CONNECTION_CHANGE &&
-            !wasConnected &&
             action.payload === true);
     }
     return false;
@@ -4181,9 +4180,8 @@ function didQueueResume(action, isQueuePaused) {
 var isQueueInProgress = false;
 var createReleaseQueue = function (getState, next, delay) { return function () { return __awaiter(void 0, void 0, void 0, function () {
     var state, _a, isConnected, isQueuePaused, actionQueue, action;
-    var _b;
-    return __generator(this, function (_c) {
-        switch (_c.label) {
+    return __generator(this, function (_b) {
+        switch (_b.label) {
             case 0:
                 state = getState();
                 _a = state.network, isConnected = _a.isConnected, isQueuePaused = _a.isQueuePaused, actionQueue = _a.actionQueue;
@@ -4192,16 +4190,15 @@ var createReleaseQueue = function (getState, next, delay) { return function () {
                     isConnected &&
                     !isQueuePaused)) return [3 /*break*/, 2];
                 action = actionQueue[0];
+                // TODO: add flag to meta details for thunks which should be automatically/manually removed from queue
+                // TODO: add action dismissing to required thunk success/error handlers
                 next(removeActionFromQueue(action));
-                if ((_b = action) === null || _b === void 0 ? void 0 : _b.meta) {
-                    action.meta.isFromQueue = true;
-                }
                 next(action);
                 // eslint-disable-next-line
                 return [4 /*yield*/, wait(delay)];
             case 1:
                 // eslint-disable-next-line
-                _c.sent();
+                _b.sent();
                 return [3 /*break*/, 3];
             case 2:
                 isQueueInProgress = false;
@@ -4220,14 +4217,13 @@ function createNetworkMiddleware(_a) {
             var releaseQueue = createReleaseQueue(getState, next, queueReleaseThrottle);
             validateParams(regexActionType, actionTypes);
             var shouldInterceptAction = checkIfActionShouldBeIntercepted(action, regexActionType, actionTypes);
-            if (shouldInterceptAction && isConnected !== true) {
-                // Offline, preventing the original action from being dispatched.
+            if (shouldInterceptAction) {
                 // Dispatching an internal action instead.
                 return next(fetchOfflineMode(action));
             }
-            var isBackOnline = didComeBackOnline(action, isConnected);
+            var isOnline = didComeBackOnline(action);
             var hasQueueBeenResumed = didQueueResume(action, isQueuePaused);
-            var shouldDequeue = (isBackOnline || (isConnected && hasQueueBeenResumed)) &&
+            var shouldDequeue = (isOnline || (isConnected && hasQueueBeenResumed)) &&
                 shouldDequeueSelector(getState());
             if (shouldDequeue && !isQueueInProgress) {
                 // Dispatching queued actions in order of arrival (if we have any)
