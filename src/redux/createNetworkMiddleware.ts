@@ -79,14 +79,10 @@ function checkIfActionShouldBeIntercepted(
   );
 }
 
-function didComeBackOnline(
-  action: EnqueuedAction,
-  wasConnected: boolean | null,
-) {
+function didComeBackOnline(action: EnqueuedAction) {
   if ('type' in action && 'payload' in action) {
     return (
       action.type === networkActionTypes.CONNECTION_CHANGE &&
-      !wasConnected &&
       action.payload === true
     );
   }
@@ -124,10 +120,9 @@ export const createReleaseQueue = (
       !isQueuePaused
     ) {
       const action = actionQueue[0];
+      //TODO: add flag to meta details for thunks which should be automatically/manually removed from queue
+      //TODO: add action dismissing to required thunk success/error handlers
       next(removeActionFromQueue(action));
-      if (action?.meta) {
-        action.meta.isFromQueue = true;
-      }
       next(action);
       // eslint-disable-next-line
       await wait(delay);
@@ -161,17 +156,16 @@ function createNetworkMiddleware({
       actionTypes,
     );
 
-    if (shouldInterceptAction && isConnected !== true) {
-      // Offline, preventing the original action from being dispatched.
+    if (shouldInterceptAction) {
       // Dispatching an internal action instead.
       return next(fetchOfflineMode(action));
     }
 
-    const isBackOnline = didComeBackOnline(action, isConnected);
+    const isOnline = didComeBackOnline(action, isConnected);
     const hasQueueBeenResumed = didQueueResume(action, isQueuePaused);
 
     const shouldDequeue =
-      (isBackOnline || (isConnected && hasQueueBeenResumed)) &&
+      (isOnline || (isConnected && hasQueueBeenResumed)) &&
       shouldDequeueSelector(getState());
 
     if (shouldDequeue && !isQueueInProgress) {
