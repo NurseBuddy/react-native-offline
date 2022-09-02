@@ -138,7 +138,7 @@ function createNetworkMiddleware({
       return next(fetchOfflineMode(action));
     }
     const shouldDequeue =
-      isConnected && isQueuePaused && shouldDequeueSelector(getState());
+      isConnected && !isQueuePaused && shouldDequeueSelector(getState());
 
     if (shouldDequeue && !isQueueInProgress) {
       // Dispatching queued actions in order of arrival (if we have any)
