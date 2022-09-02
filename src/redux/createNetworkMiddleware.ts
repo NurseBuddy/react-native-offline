@@ -6,10 +6,8 @@ import {
   removeActionFromQueue,
   dismissActionsFromQueue,
 } from './actionCreators';
-import * as networkActionTypes from './actionTypes';
 import wait from '../utils/wait';
 import { NetworkState, EnqueuedAction } from '../types';
-import { SEMAPHORE_COLOR } from '../utils/constants';
 
 type GetState = MiddlewareAPI<Dispatch, State>['getState'];
 type State = {
@@ -79,27 +77,6 @@ function checkIfActionShouldBeIntercepted(
   );
 }
 
-function didComeBackOnline(action: EnqueuedAction) {
-  if ('type' in action && 'payload' in action) {
-    return (
-      action.type === networkActionTypes.CONNECTION_CHANGE &&
-      action.payload === true
-    );
-  }
-  return false;
-}
-
-function didQueueResume(action: EnqueuedAction, isQueuePaused: boolean) {
-  if ('type' in action && 'payload' in action) {
-    return (
-      action.type === networkActionTypes.CHANGE_QUEUE_SEMAPHORE &&
-      isQueuePaused &&
-      action.payload === SEMAPHORE_COLOR.GREEN
-    );
-  }
-  return false;
-}
-
 let isQueueInProgress = false;
 
 export const createReleaseQueue = (
@@ -160,13 +137,8 @@ function createNetworkMiddleware({
       // Dispatching an internal action instead.
       return next(fetchOfflineMode(action));
     }
-
-    const isOnline = didComeBackOnline(action);
-    const hasQueueBeenResumed = didQueueResume(action, isQueuePaused);
-
     const shouldDequeue =
-      (isOnline || (isConnected && hasQueueBeenResumed)) &&
-      shouldDequeueSelector(getState());
+      isConnected && isQueuePaused && shouldDequeueSelector(getState());
 
     if (shouldDequeue && !isQueueInProgress) {
       // Dispatching queued actions in order of arrival (if we have any)
