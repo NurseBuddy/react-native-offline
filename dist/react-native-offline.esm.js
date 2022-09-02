@@ -4162,21 +4162,6 @@ function checkIfActionShouldBeIntercepted(action, regexActionType, actionTypes) 
     return (isObjectAndShouldBeIntercepted(action, regexActionType, actionTypes) ||
         isThunkAndShouldBeIntercepted(action));
 }
-function didComeBackOnline(action) {
-    if ('type' in action && 'payload' in action) {
-        return (action.type === CONNECTION_CHANGE &&
-            action.payload === true);
-    }
-    return false;
-}
-function didQueueResume(action, isQueuePaused) {
-    if ('type' in action && 'payload' in action) {
-        return (action.type === CHANGE_QUEUE_SEMAPHORE &&
-            isQueuePaused &&
-            action.payload === SEMAPHORE_COLOR.GREEN);
-    }
-    return false;
-}
 var isQueueInProgress = false;
 var createReleaseQueue = function (getState, next, delay) { return function () { return __awaiter(void 0, void 0, void 0, function () {
     var state, _a, isConnected, isQueuePaused, actionQueue, action;
@@ -4221,10 +4206,7 @@ function createNetworkMiddleware(_a) {
                 // Dispatching an internal action instead.
                 return next(fetchOfflineMode(action));
             }
-            var isOnline = didComeBackOnline(action);
-            var hasQueueBeenResumed = didQueueResume(action, isQueuePaused);
-            var shouldDequeue = (isOnline || (isConnected && hasQueueBeenResumed)) &&
-                shouldDequeueSelector(getState());
+            var shouldDequeue = isConnected && isQueuePaused && shouldDequeueSelector(getState());
             if (shouldDequeue && !isQueueInProgress) {
                 // Dispatching queued actions in order of arrival (if we have any)
                 next(action);
