@@ -4172,8 +4172,9 @@ function checkIfActionShouldBeIntercepted(action, regexActionType, actionTypes) 
 var isQueueInProgress = false;
 var createReleaseQueue = function (getState, next, delay) { return function () { return __awaiter(void 0, void 0, void 0, function () {
     var state, _a, isConnected, isQueuePaused, actionQueue, action;
-    return __generator(this, function (_b) {
-        switch (_b.label) {
+    var _b, _c;
+    return __generator(this, function (_d) {
+        switch (_d.label) {
             case 0:
                 state = getState();
                 _a = state.network, isConnected = _a.isConnected, isQueuePaused = _a.isQueuePaused, actionQueue = _a.actionQueue;
@@ -4182,15 +4183,15 @@ var createReleaseQueue = function (getState, next, delay) { return function () {
                     isConnected &&
                     !isQueuePaused)) return [3 /*break*/, 2];
                 action = actionQueue[0];
-                // TODO: add flag to meta details for thunks which should be automatically/manually removed from queue
-                // TODO: add action dismissing to required thunk success/error handlers
-                next(removeActionFromQueue(action));
+                if (!((_c = (_b = action) === null || _b === void 0 ? void 0 : _b.meta) === null || _c === void 0 ? void 0 : _c.doNotAutoRemoveFromQueue)) {
+                    next(removeActionFromQueue(action));
+                }
                 next(action);
                 // eslint-disable-next-line
                 return [4 /*yield*/, wait(delay)];
             case 1:
                 // eslint-disable-next-line
-                _b.sent();
+                _d.sent();
                 return [3 /*break*/, 3];
             case 2:
                 isQueueInProgress = false;
@@ -4224,7 +4225,7 @@ function createNetworkMiddleware(_a) {
             // narrow down type from thunk to only pass in actions with type -> AnyAction
             if ('type' in action) {
                 var isAnyActionToBeDismissed = findActionToBeDismissed(action, actionQueue);
-                if (isAnyActionToBeDismissed && !isConnected) {
+                if (isAnyActionToBeDismissed) {
                     next(dismissActionsFromQueue(action.type));
                 }
             }
