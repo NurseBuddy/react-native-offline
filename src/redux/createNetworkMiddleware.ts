@@ -97,9 +97,9 @@ export const createReleaseQueue = (
       !isQueuePaused
     ) {
       const action = actionQueue[0];
-      // TODO: add flag to meta details for thunks which should be automatically/manually removed from queue
-      // TODO: add action dismissing to required thunk success/error handlers
-      next(removeActionFromQueue(action));
+      if (!action?.meta?.doNotAutoRemoveFromQueue) {
+        next(removeActionFromQueue(action));
+      }
       next(action);
       // eslint-disable-next-line
       await wait(delay);
@@ -154,7 +154,7 @@ function createNetworkMiddleware({
         action,
         actionQueue,
       );
-      if (isAnyActionToBeDismissed && !isConnected) {
+      if (isAnyActionToBeDismissed) {
         next(dismissActionsFromQueue(action.type));
       }
     }
