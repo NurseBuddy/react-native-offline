@@ -4181,8 +4181,9 @@ function didQueueResume(action, isQueuePaused) {
 var isQueueInProgress = false;
 var createReleaseQueue = function (getState, next, delay) { return function () { return __awaiter(void 0, void 0, void 0, function () {
     var state, _a, isConnected, isQueuePaused, actionQueue, action;
-    return __generator(this, function (_b) {
-        switch (_b.label) {
+    var _b;
+    return __generator(this, function (_c) {
+        switch (_c.label) {
             case 0:
                 state = getState();
                 _a = state.network, isConnected = _a.isConnected, isQueuePaused = _a.isQueuePaused, actionQueue = _a.actionQueue;
@@ -4192,12 +4193,15 @@ var createReleaseQueue = function (getState, next, delay) { return function () {
                     !isQueuePaused)) return [3 /*break*/, 2];
                 action = actionQueue[0];
                 next(removeActionFromQueue(action));
+                if ((_b = action) === null || _b === void 0 ? void 0 : _b.meta) {
+                    action.meta.isFromQueue = true;
+                }
                 next(action);
                 // eslint-disable-next-line
                 return [4 /*yield*/, wait(delay)];
             case 1:
                 // eslint-disable-next-line
-                _b.sent();
+                _c.sent();
                 return [3 /*break*/, 3];
             case 2:
                 isQueueInProgress = false;
