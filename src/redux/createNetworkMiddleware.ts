@@ -97,12 +97,17 @@ export const createReleaseQueue = (
       !isQueuePaused
     ) {
       const action = actionQueue[0];
-      if (!action?.meta?.doNotAutoRemoveFromQueue) {
+      if (action?.meta?.doNotAutoRemoveFromQueue) {
+        next(action);
+        // eslint-disable-next-line
+        await wait(delay);
+        break;
+      } else {
         next(removeActionFromQueue(action));
+        next(action);
+        // eslint-disable-next-line
+        await wait(delay);
       }
-      next(action);
-      // eslint-disable-next-line
-      await wait(delay);
     } else {
       isQueueInProgress = false;
       break;
