@@ -4181,7 +4181,7 @@ var createReleaseQueue = function (getState, next, delay) { return function () {
                 if (!(actionQueue &&
                     actionQueue.length > 0 &&
                     isConnected &&
-                    !isQueuePaused)) return [3 /*break*/, 7];
+                    !isQueuePaused)) return [3 /*break*/, 4];
                 patchingInProgress = actionQueue.find(function (a) { var _a, _b; return (_b = (_a = a) === null || _a === void 0 ? void 0 : _a.meta) === null || _b === void 0 ? void 0 : _b.patchingInProgress; });
                 if (!patchingInProgress) return [3 /*break*/, 2];
                 // eslint-disable-next-line
@@ -4193,9 +4193,13 @@ var createReleaseQueue = function (getState, next, delay) { return function () {
                 return [3 /*break*/, 0];
             case 2:
                 action = actionQueue[0];
-                if (!((_c = (_b = action) === null || _b === void 0 ? void 0 : _b.meta) === null || _c === void 0 ? void 0 : _c.doNotAutoRemoveFromQueue)) return [3 /*break*/, 4];
-                if (action.meta) {
-                    action.meta.patchingInProgress = true;
+                if ((_c = (_b = action) === null || _b === void 0 ? void 0 : _b.meta) === null || _c === void 0 ? void 0 : _c.doNotAutoRemoveFromQueue) {
+                    if (action.meta) {
+                        action.meta.patchingInProgress = true;
+                    }
+                }
+                else {
+                    next(removeActionFromQueue(action));
                 }
                 next(action);
                 // eslint-disable-next-line
@@ -4203,23 +4207,12 @@ var createReleaseQueue = function (getState, next, delay) { return function () {
             case 3:
                 // eslint-disable-next-line
                 _d.sent();
-                isQueueInProgress = false;
-                return [3 /*break*/, 9];
+                return [3 /*break*/, 5];
             case 4:
-                next(removeActionFromQueue(action));
-                next(action);
-                // eslint-disable-next-line
-                return [4 /*yield*/, wait(delay)];
-            case 5:
-                // eslint-disable-next-line
-                _d.sent();
-                _d.label = 6;
-            case 6: return [3 /*break*/, 8];
-            case 7:
                 isQueueInProgress = false;
-                return [3 /*break*/, 9];
-            case 8: return [3 /*break*/, 0];
-            case 9: return [2 /*return*/];
+                return [3 /*break*/, 6];
+            case 5: return [3 /*break*/, 0];
+            case 6: return [2 /*return*/];
         }
     });
 }); }; };
