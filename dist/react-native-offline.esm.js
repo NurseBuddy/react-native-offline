@@ -4174,23 +4174,31 @@ var createReleaseQueue = function (getState, next, delay) { return function () {
                 if (!(actionQueue &&
                     actionQueue.length > 0 &&
                     isConnected &&
-                    !isQueuePaused)) return [3 /*break*/, 2];
+                    !isQueuePaused)) return [3 /*break*/, 5];
                 action = actionQueue[0];
-                if (!((_c = (_b = action) === null || _b === void 0 ? void 0 : _b.meta) === null || _c === void 0 ? void 0 : _c.doNotAutoRemoveFromQueue)) {
-                    next(removeActionFromQueue(action));
-                }
+                if (!((_c = (_b = action) === null || _b === void 0 ? void 0 : _b.meta) === null || _c === void 0 ? void 0 : _c.doNotAutoRemoveFromQueue)) return [3 /*break*/, 2];
                 next(action);
                 // eslint-disable-next-line
                 return [4 /*yield*/, wait(delay)];
             case 1:
                 // eslint-disable-next-line
                 _d.sent();
-                return [3 /*break*/, 3];
+                return [3 /*break*/, 7];
             case 2:
+                next(removeActionFromQueue(action));
+                next(action);
+                // eslint-disable-next-line
+                return [4 /*yield*/, wait(delay)];
+            case 3:
+                // eslint-disable-next-line
+                _d.sent();
+                _d.label = 4;
+            case 4: return [3 /*break*/, 6];
+            case 5:
                 isQueueInProgress = false;
-                return [3 /*break*/, 4];
-            case 3: return [3 /*break*/, 0];
-            case 4: return [2 /*return*/];
+                return [3 /*break*/, 7];
+            case 6: return [3 /*break*/, 0];
+            case 7: return [2 /*return*/];
         }
     });
 }); }; };
