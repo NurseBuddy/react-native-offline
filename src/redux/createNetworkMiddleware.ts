@@ -111,17 +111,12 @@ export const createReleaseQueue = (
         if (action.meta) {
           action.meta.patchingInProgress = true;
         }
-        next(action);
-        // eslint-disable-next-line
-        await wait(delay);
-        isQueueInProgress = false;
-        break;
       } else {
         next(removeActionFromQueue(action));
-        next(action);
-        // eslint-disable-next-line
-        await wait(delay);
       }
+      next(action);
+      // eslint-disable-next-line
+      await wait(delay);
     } else {
       isQueueInProgress = false;
       break;
