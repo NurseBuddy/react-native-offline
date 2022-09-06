@@ -4171,19 +4171,24 @@ function checkIfActionShouldBeIntercepted(action, regexActionType, actionTypes) 
 }
 var isQueueInProgress = false;
 var createReleaseQueue = function (getState, next, delay) { return function () { return __awaiter(void 0, void 0, void 0, function () {
-    var state, _a, isConnected, isQueuePaused, actionQueue, action;
+    var state, _a, isConnected, isQueuePaused, actionQueue, patchingInProgress, action;
     var _b, _c;
     return __generator(this, function (_d) {
         switch (_d.label) {
             case 0:
                 state = getState();
                 _a = state.network, isConnected = _a.isConnected, isQueuePaused = _a.isQueuePaused, actionQueue = _a.actionQueue;
+                patchingInProgress = actionQueue.find(function (a) { var _a, _b; return (_b = (_a = a) === null || _a === void 0 ? void 0 : _a.meta) === null || _b === void 0 ? void 0 : _b.patchingInProgress; });
                 if (!(actionQueue &&
                     actionQueue.length > 0 &&
                     isConnected &&
-                    !isQueuePaused)) return [3 /*break*/, 5];
+                    !isQueuePaused &&
+                    !patchingInProgress)) return [3 /*break*/, 5];
                 action = actionQueue[0];
                 if (!((_c = (_b = action) === null || _b === void 0 ? void 0 : _b.meta) === null || _c === void 0 ? void 0 : _c.doNotAutoRemoveFromQueue)) return [3 /*break*/, 2];
+                if (action.meta) {
+                    action.meta.patchingInProgress = true;
+                }
                 next(action);
                 // eslint-disable-next-line
                 return [4 /*yield*/, wait(delay)];
