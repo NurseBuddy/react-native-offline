@@ -89,18 +89,23 @@ export const createReleaseQueue = (
     const state = getState();
 
     const { isConnected, isQueuePaused, actionQueue } = state.network;
-
-    const patchingInProgress = actionQueue.find(
-      a => a?.meta?.patchingInProgress,
-    );
-
     if (
       actionQueue &&
       actionQueue.length > 0 &&
       isConnected &&
-      !isQueuePaused &&
-      !patchingInProgress
+      !isQueuePaused
     ) {
+      const patchingInProgress = actionQueue.find(
+        a => a?.meta?.patchingInProgress,
+      );
+
+      if (patchingInProgress) {
+        // eslint-disable-next-line
+        await wait(delay);
+        // eslint-disable-next-line
+        continue;
+      }
+
       const action = actionQueue[0];
       if (action?.meta?.doNotAutoRemoveFromQueue) {
         if (action.meta) {
