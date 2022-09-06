@@ -101,6 +101,7 @@ export const createReleaseQueue = (
         next(action);
         // eslint-disable-next-line
         await wait(delay);
+        isQueueInProgress = false;
         break;
       } else {
         next(removeActionFromQueue(action));

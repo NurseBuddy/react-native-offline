@@ -4183,6 +4183,7 @@ var createReleaseQueue = function (getState, next, delay) { return function () {
             case 1:
                 // eslint-disable-next-line
                 _d.sent();
+                isQueueInProgress = false;
                 return [3 /*break*/, 7];
             case 2:
                 next(removeActionFromQueue(action));
