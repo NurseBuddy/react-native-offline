@@ -4228,13 +4228,6 @@ function createNetworkMiddleware(_a) {
                 // Dispatching an internal action instead.
                 return next(fetchOfflineMode(action));
             }
-            var shouldDequeue = isConnected && !isQueuePaused && shouldDequeueSelector(getState());
-            if (shouldDequeue && !isQueueInProgress) {
-                // Dispatching queued actions in order of arrival (if we have any)
-                next(action);
-                isQueueInProgress = true;
-                return releaseQueue();
-            }
             // Checking if we have a dismissal case
             // narrow down type from thunk to only pass in actions with type -> AnyAction
             if ('type' in action) {
@@ -4242,6 +4235,13 @@ function createNetworkMiddleware(_a) {
                 if (isAnyActionToBeDismissed) {
                     next(dismissActionsFromQueue(action.type));
                 }
+            }
+            var shouldDequeue = isConnected && !isQueuePaused && shouldDequeueSelector(getState());
+            if (shouldDequeue && !isQueueInProgress) {
+                // Dispatching queued actions in order of arrival (if we have any)
+                next(action);
+                isQueueInProgress = true;
+                return releaseQueue();
             }
             // Proxy the original action to the next middleware on the chain or final dispatch
             return next(action);
