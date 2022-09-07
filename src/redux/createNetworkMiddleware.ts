@@ -7,6 +7,7 @@ import {
   dismissActionsFromQueue,
 } from './actionCreators';
 import wait from '../utils/wait';
+import { isNetworkBack } from '../utils/getIsNetworkBack';
 import { NetworkState, EnqueuedAction } from '../types';
 
 type GetState = MiddlewareAPI<Dispatch, State>['getState'];
@@ -164,8 +165,12 @@ function createNetworkMiddleware({
       }
     }
 
+    const isConnectionBackAction = isNetworkBack(action);
+
     const shouldDequeue =
-      isConnected && !isQueuePaused && shouldDequeueSelector(getState());
+      (isConnected || isConnectionBackAction) &&
+      !isQueuePaused &&
+      shouldDequeueSelector(getState());
 
     if (shouldDequeue && !isQueueInProgress) {
       // Dispatching queued actions in order of arrival (if we have any)

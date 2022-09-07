@@ -4138,6 +4138,13 @@ var find_1 = find;
 
 var wait = function (t) { return new Promise(function (resolve) { return setTimeout(resolve, t); }); };
 
+function isNetworkBack(action) {
+    if (typeof action === 'object' && 'type' in action) {
+        return action.type === CONNECTION_CHANGE && action.payload;
+    }
+    return false;
+}
+
 var DEFAULT_ARGUMENTS$1 = {
     actionTypes: [],
     regexActionType: /FETCH.*REQUEST/,
@@ -4237,7 +4244,10 @@ function createNetworkMiddleware(_a) {
                     next(dismissActionsFromQueue(action.type));
                 }
             }
-            var shouldDequeue = isConnected && !isQueuePaused && shouldDequeueSelector(getState());
+            var isConnectionBackAction = isNetworkBack(action);
+            var shouldDequeue = (isConnected || isConnectionBackAction) &&
+                !isQueuePaused &&
+                shouldDequeueSelector(getState());
             if (shouldDequeue && !isQueueInProgress) {
                 // Dispatching queued actions in order of arrival (if we have any)
                 next(action);
