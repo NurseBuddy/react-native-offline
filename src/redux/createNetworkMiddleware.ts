@@ -6,10 +6,9 @@ import {
   removeActionFromQueue,
   dismissActionsFromQueue,
 } from './actionCreators';
-import * as networkActionTypes from './actionTypes';
 import wait from '../utils/wait';
+import { isNetworkBack } from '../utils/getIsNetworkBack';
 import { NetworkState, EnqueuedAction } from '../types';
-import { SEMAPHORE_COLOR } from '../utils/constants';
 
 type GetState = MiddlewareAPI<Dispatch, State>['getState'];
 type State = {
@@ -79,31 +78,6 @@ function checkIfActionShouldBeIntercepted(
   );
 }
 
-function didComeBackOnline(
-  action: EnqueuedAction,
-  wasConnected: boolean | null,
-) {
-  if ('type' in action && 'payload' in action) {
-    return (
-      action.type === networkActionTypes.CONNECTION_CHANGE &&
-      !wasConnected &&
-      action.payload === true
-    );
-  }
-  return false;
-}
-
-function didQueueResume(action: EnqueuedAction, isQueuePaused: boolean) {
-  if ('type' in action && 'payload' in action) {
-    return (
-      action.type === networkActionTypes.CHANGE_QUEUE_SEMAPHORE &&
-      isQueuePaused &&
-      action.payload === SEMAPHORE_COLOR.GREEN
-    );
-  }
-  return false;
-}
-
 let isQueueInProgress = false;
 
 export const createReleaseQueue = (
@@ -116,17 +90,30 @@ export const createReleaseQueue = (
     const state = getState();
 
     const { isConnected, isQueuePaused, actionQueue } = state.network;
-
     if (
       actionQueue &&
       actionQueue.length > 0 &&
       isConnected &&
       !isQueuePaused
     ) {
+      const patchingInProgress = actionQueue.find(
+        a => a?.meta?.patchingInProgress,
+      );
+
+      if (patchingInProgress) {
+        // eslint-disable-next-line
+        await wait(delay);
+        // eslint-disable-next-line
+        continue;
+      }
+
       const action = actionQueue[0];
-      next(removeActionFromQueue(action));
-      if (action?.meta) {
-        action.meta.isFromQueue = true;
+      if (action?.meta?.doNotAutoRemoveFromQueue) {
+        if (action.meta) {
+          action.meta.patchingInProgress = true;
+        }
+      } else {
+        next(removeActionFromQueue(action));
       }
       next(action);
       // eslint-disable-next-line
@@ -161,24 +148,9 @@ function createNetworkMiddleware({
       actionTypes,
     );
 
-    if (shouldInterceptAction && isConnected !== true) {
-      // Offline, preventing the original action from being dispatched.
+    if (shouldInterceptAction) {
       // Dispatching an internal action instead.
       return next(fetchOfflineMode(action));
-    }
-
-    const isBackOnline = didComeBackOnline(action, isConnected);
-    const hasQueueBeenResumed = didQueueResume(action, isQueuePaused);
-
-    const shouldDequeue =
-      (isBackOnline || (isConnected && hasQueueBeenResumed)) &&
-      shouldDequeueSelector(getState());
-
-    if (shouldDequeue && !isQueueInProgress) {
-      // Dispatching queued actions in order of arrival (if we have any)
-      next(action);
-      isQueueInProgress = true;
-      return releaseQueue();
     }
 
     // Checking if we have a dismissal case
@@ -188,9 +160,23 @@ function createNetworkMiddleware({
         action,
         actionQueue,
       );
-      if (isAnyActionToBeDismissed && !isConnected) {
+      if (isAnyActionToBeDismissed) {
         next(dismissActionsFromQueue(action.type));
       }
+    }
+
+    const isConnectionBackAction = isNetworkBack(action);
+
+    const shouldDequeue =
+      (isConnected || isConnectionBackAction) &&
+      !isQueuePaused &&
+      shouldDequeueSelector(getState());
+
+    if (shouldDequeue && !isQueueInProgress) {
+      // Dispatching queued actions in order of arrival (if we have any)
+      next(action);
+      isQueueInProgress = true;
+      return releaseQueue();
     }
 
     // Proxy the original action to the next middleware on the chain or final dispatch

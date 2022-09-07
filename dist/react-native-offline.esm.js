@@ -4131,6 +4131,13 @@ var find_1 = find;
 
 var wait = function (t) { return new Promise(function (resolve) { return setTimeout(resolve, t); }); };
 
+function isNetworkBack(action) {
+    if (typeof action === 'object' && 'type' in action) {
+        return action.type === CONNECTION_CHANGE && action.payload;
+    }
+    return false;
+}
+
 var DEFAULT_ARGUMENTS$1 = {
     actionTypes: [],
     regexActionType: /FETCH.*REQUEST/,
@@ -4162,52 +4169,50 @@ function checkIfActionShouldBeIntercepted(action, regexActionType, actionTypes) 
     return (isObjectAndShouldBeIntercepted(action, regexActionType, actionTypes) ||
         isThunkAndShouldBeIntercepted(action));
 }
-function didComeBackOnline(action, wasConnected) {
-    if ('type' in action && 'payload' in action) {
-        return (action.type === CONNECTION_CHANGE &&
-            !wasConnected &&
-            action.payload === true);
-    }
-    return false;
-}
-function didQueueResume(action, isQueuePaused) {
-    if ('type' in action && 'payload' in action) {
-        return (action.type === CHANGE_QUEUE_SEMAPHORE &&
-            isQueuePaused &&
-            action.payload === SEMAPHORE_COLOR.GREEN);
-    }
-    return false;
-}
 var isQueueInProgress = false;
 var createReleaseQueue = function (getState, next, delay) { return function () { return __awaiter(void 0, void 0, void 0, function () {
-    var state, _a, isConnected, isQueuePaused, actionQueue, action;
-    var _b;
-    return __generator(this, function (_c) {
-        switch (_c.label) {
+    var state, _a, isConnected, isQueuePaused, actionQueue, patchingInProgress, action;
+    var _b, _c;
+    return __generator(this, function (_d) {
+        switch (_d.label) {
             case 0:
                 state = getState();
                 _a = state.network, isConnected = _a.isConnected, isQueuePaused = _a.isQueuePaused, actionQueue = _a.actionQueue;
                 if (!(actionQueue &&
                     actionQueue.length > 0 &&
                     isConnected &&
-                    !isQueuePaused)) return [3 /*break*/, 2];
-                action = actionQueue[0];
-                next(removeActionFromQueue(action));
-                if ((_b = action) === null || _b === void 0 ? void 0 : _b.meta) {
-                    action.meta.isFromQueue = true;
-                }
-                next(action);
+                    !isQueuePaused)) return [3 /*break*/, 4];
+                patchingInProgress = actionQueue.find(function (a) { var _a, _b; return (_b = (_a = a) === null || _a === void 0 ? void 0 : _a.meta) === null || _b === void 0 ? void 0 : _b.patchingInProgress; });
+                if (!patchingInProgress) return [3 /*break*/, 2];
                 // eslint-disable-next-line
                 return [4 /*yield*/, wait(delay)];
             case 1:
                 // eslint-disable-next-line
-                _c.sent();
-                return [3 /*break*/, 3];
+                _d.sent();
+                // eslint-disable-next-line
+                return [3 /*break*/, 0];
             case 2:
+                action = actionQueue[0];
+                if ((_c = (_b = action) === null || _b === void 0 ? void 0 : _b.meta) === null || _c === void 0 ? void 0 : _c.doNotAutoRemoveFromQueue) {
+                    if (action.meta) {
+                        action.meta.patchingInProgress = true;
+                    }
+                }
+                else {
+                    next(removeActionFromQueue(action));
+                }
+                next(action);
+                // eslint-disable-next-line
+                return [4 /*yield*/, wait(delay)];
+            case 3:
+                // eslint-disable-next-line
+                _d.sent();
+                return [3 /*break*/, 5];
+            case 4:
                 isQueueInProgress = false;
-                return [3 /*break*/, 4];
-            case 3: return [3 /*break*/, 0];
-            case 4: return [2 /*return*/];
+                return [3 /*break*/, 6];
+            case 5: return [3 /*break*/, 0];
+            case 6: return [2 /*return*/];
         }
     });
 }); }; };
@@ -4220,28 +4225,27 @@ function createNetworkMiddleware(_a) {
             var releaseQueue = createReleaseQueue(getState, next, queueReleaseThrottle);
             validateParams(regexActionType, actionTypes);
             var shouldInterceptAction = checkIfActionShouldBeIntercepted(action, regexActionType, actionTypes);
-            if (shouldInterceptAction && isConnected !== true) {
-                // Offline, preventing the original action from being dispatched.
+            if (shouldInterceptAction) {
                 // Dispatching an internal action instead.
                 return next(fetchOfflineMode(action));
             }
-            var isBackOnline = didComeBackOnline(action, isConnected);
-            var hasQueueBeenResumed = didQueueResume(action, isQueuePaused);
-            var shouldDequeue = (isBackOnline || (isConnected && hasQueueBeenResumed)) &&
+            // Checking if we have a dismissal case
+            // narrow down type from thunk to only pass in actions with type -> AnyAction
+            if ('type' in action) {
+                var isAnyActionToBeDismissed = findActionToBeDismissed(action, actionQueue);
+                if (isAnyActionToBeDismissed) {
+                    next(dismissActionsFromQueue(action.type));
+                }
+            }
+            var isConnectionBackAction = isNetworkBack(action);
+            var shouldDequeue = (isConnected || isConnectionBackAction) &&
+                !isQueuePaused &&
                 shouldDequeueSelector(getState());
             if (shouldDequeue && !isQueueInProgress) {
                 // Dispatching queued actions in order of arrival (if we have any)
                 next(action);
                 isQueueInProgress = true;
                 return releaseQueue();
-            }
-            // Checking if we have a dismissal case
-            // narrow down type from thunk to only pass in actions with type -> AnyAction
-            if ('type' in action) {
-                var isAnyActionToBeDismissed = findActionToBeDismissed(action, actionQueue);
-                if (isAnyActionToBeDismissed && !isConnected) {
-                    next(dismissActionsFromQueue(action.type));
-                }
             }
             // Proxy the original action to the next middleware on the chain or final dispatch
             return next(action);
