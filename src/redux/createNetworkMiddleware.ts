@@ -150,7 +150,7 @@ function createNetworkMiddleware({
 
     if (shouldInterceptAction) {
       // Dispatching an internal action instead.
-      return next(fetchOfflineMode(action));
+      next(fetchOfflineMode(action));
     }
 
     // Checking if we have a dismissal case
