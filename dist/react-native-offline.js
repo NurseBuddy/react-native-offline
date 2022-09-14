@@ -4234,7 +4234,7 @@ function createNetworkMiddleware(_a) {
             var shouldInterceptAction = checkIfActionShouldBeIntercepted(action, regexActionType, actionTypes);
             if (shouldInterceptAction) {
                 // Dispatching an internal action instead.
-                return next(fetchOfflineMode(action));
+                next(fetchOfflineMode(action));
             }
             // Checking if we have a dismissal case
             // narrow down type from thunk to only pass in actions with type -> AnyAction
