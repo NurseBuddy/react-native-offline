@@ -148,9 +148,10 @@ function createNetworkMiddleware({
       actionTypes,
     );
 
+    let interceptedAction;
     if (shouldInterceptAction) {
       // Dispatching an internal action instead.
-      next(fetchOfflineMode(action));
+      interceptedAction = next(fetchOfflineMode(action));
     }
 
     // Checking if we have a dismissal case
@@ -173,13 +174,18 @@ function createNetworkMiddleware({
       shouldDequeueSelector(getState());
 
     if (shouldDequeue && !isQueueInProgress) {
-      // Dispatching queued actions in order of arrival (if we have any)
-      next(action);
+      // If action was intercepted by queue do not dispatch the original action
+      if (!shouldInterceptAction) {
+        next(action);
+      }
       isQueueInProgress = true;
+      // Dispatching queued actions in order of arrival (if we have any)
       return releaseQueue();
     }
 
-    // Proxy the original action to the next middleware on the chain or final dispatch
+    // If action was intercepted by queue do not dispatch the original action
+    if (shouldInterceptAction) return interceptedAction;
+
     return next(action);
   };
 }
