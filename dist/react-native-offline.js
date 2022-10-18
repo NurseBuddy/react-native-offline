@@ -4177,18 +4177,20 @@ function checkIfActionShouldBeIntercepted(action, regexActionType, actionTypes) 
         isThunkAndShouldBeIntercepted(action));
 }
 var isQueueInProgress = false;
-var createReleaseQueue = function (getState, next, delay) { return function () { return __awaiter(void 0, void 0, void 0, function () {
-    var state, _a, isConnected, isQueuePaused, actionQueue, patchingInProgress, action;
+var createReleaseQueue = function (getState, next, delay, shouldDequeueSelector) { return function () { return __awaiter(void 0, void 0, void 0, function () {
+    var state, _a, isConnected, isQueuePaused, actionQueue, shouldDequeue, patchingInProgress, action;
     var _b, _c;
     return __generator(this, function (_d) {
         switch (_d.label) {
             case 0:
                 state = getState();
                 _a = state.network, isConnected = _a.isConnected, isQueuePaused = _a.isQueuePaused, actionQueue = _a.actionQueue;
+                shouldDequeue = shouldDequeueSelector(state);
                 if (!(actionQueue &&
                     actionQueue.length > 0 &&
                     isConnected &&
-                    !isQueuePaused)) return [3 /*break*/, 4];
+                    !isQueuePaused &&
+                    shouldDequeue)) return [3 /*break*/, 4];
                 patchingInProgress = actionQueue.find(function (a) { var _a, _b; return (_b = (_a = a) === null || _a === void 0 ? void 0 : _a.meta) === null || _b === void 0 ? void 0 : _b.patchingInProgress; });
                 if (!patchingInProgress) return [3 /*break*/, 2];
                 // eslint-disable-next-line
@@ -4229,7 +4231,7 @@ function createNetworkMiddleware(_a) {
         var getState = _a.getState;
         return function (next) { return function (action) {
             var _a = getState().network, isConnected = _a.isConnected, actionQueue = _a.actionQueue, isQueuePaused = _a.isQueuePaused;
-            var releaseQueue = createReleaseQueue(getState, next, queueReleaseThrottle);
+            var releaseQueue = createReleaseQueue(getState, next, queueReleaseThrottle, shouldDequeueSelector);
             validateParams(regexActionType, actionTypes);
             var shouldInterceptAction = checkIfActionShouldBeIntercepted(action, regexActionType, actionTypes);
             var interceptedAction;
